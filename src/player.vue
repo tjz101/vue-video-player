@@ -10,7 +10,6 @@
   // lib
   import _videojs from 'video.js'
   const videojs = window.videojs || _videojs
-
   // pollfill
   if (typeof Object.assign != 'function') {
     Object.defineProperty(Object, 'assign', {
@@ -35,7 +34,6 @@
       configurable: true
     })
   }
-
   // as of videojs 6.6.0
   const DEFAULT_EVENTS = [
     'loadeddata',
@@ -48,7 +46,6 @@
     'ended',
     'error'
   ]
-
   // export
   export default {
     name: 'video-player',
@@ -119,17 +116,15 @@
         this.initialize()
       }
     },
-    beforeDestroy() {
+    beforeUnmount() {
       if (this.player) { 
         this.dispose()
       }
     },
     methods: {
       initialize() {
-
         // videojs options
         const videoOptions = Object.assign({}, this.globalOptions, this.options)
-
         // ios fullscreen
         if (this.playsinline) {
           this.$refs.video.setAttribute('playsinline', this.playsinline)
@@ -138,13 +133,11 @@
           this.$refs.video.setAttribute('x5-video-player-type', 'h5')
           this.$refs.video.setAttribute('x5-video-player-fullscreen', false)
         }
-
         // cross origin
         if (this.crossOrigin !== '') {
           this.$refs.video.crossOrigin = this.crossOrigin
           this.$refs.video.setAttribute('crossOrigin', this.crossOrigin)
         }
-
         // emit event
         const emitPlayerState = (event, value) => {
           if (event) {
@@ -154,42 +147,36 @@
             this.$emit(this.customEventName, { [event]: value })
           }
         }
-
         // avoid error "VIDEOJS: ERROR: Unable to find plugin: __ob__"
         if (videoOptions.plugins) {
           delete videoOptions.plugins.__ob__
         }
-
         // videoOptions
         // console.log('videoOptions', videoOptions)
         
         // player
         const self = this
         this.player = videojs(this.$refs.video, videoOptions, function() {
-
           // events
           const events = DEFAULT_EVENTS.concat(self.events).concat(self.globalEvents)
-
           // watch events
           const onEdEvents = {}
           for (let i = 0; i < events.length; i++) {
             if (typeof events[i] === 'string' && onEdEvents[events[i]] === undefined) {
               (event => {
                 onEdEvents[event] = null
-                this.on(event, () => {
+                self.$watch(event, () => {
                   emitPlayerState(event, true)
                 })
               })(events[i])
             }
           }
-
           // watch timeupdate
-          this.on('timeupdate', function() {
-            emitPlayerState('timeupdate', this.currentTime())
+          self.$watch('timeupdate', function() {
+            emitPlayerState('timeupdate', self.$refs.video.currentTime())
           })
-
           // player readied
-          self.$emit('ready', this)
+          self.$emit('ready', self.$refs.video)
         })
       },
       dispose(callback) {
@@ -232,3 +219,8 @@
     }
   }
 </script>
+<style scoped>
+.video-player {
+  width:fit-content;
+}
+</style>
